@@ -1,0 +1,56 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+
+namespace AuthService.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly string secretKey = "sua_chave_secreta"; // Mude para algo seguro!
+
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] UserLogin login)
+        {
+            // Validações de login (simplificado)
+            if (login.Username == "colaborador" && login.Password == "senha123")
+            {
+                var token = GenerateJwtToken(login.Username);
+                return Ok(new { Token = token });
+            }
+
+            return Unauthorized();
+        }
+
+        private string GenerateJwtToken(string username)
+        {
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, username),
+                new Claim(ClaimTypes.Role, "colaborador") // Role é 'colaborador', pode mudar
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: "SGRH",
+                audience: "SGRH",
+                claims: claims,
+                expires: DateTime.Now.AddHours(1),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+    }
+
+    public class UserLogin
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+}
